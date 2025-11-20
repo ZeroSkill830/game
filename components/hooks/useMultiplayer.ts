@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useGameStore, RemotePlayerState } from '../../store';
 
-const SERVER_URL = 'http://localhost:3001';
+const SERVER_URL = 'https://game-x7nt.onrender.com';
 
 let socketInstance: Socket | null = null;
 
