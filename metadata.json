@@ -1,0 +1,5 @@
+{
+  "name": "Office Crisis: Low Poly Shooter",
+  "description": "Uno sparatutto in prima persona (FPS) low-poly ambientato in un ufficio caotico. Elimina i bug fluttuanti prima che il sistema vada in crash. Creato con React Three Fiber.",
+  "requestFramePermissions": []
+}
