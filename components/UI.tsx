@@ -101,11 +101,14 @@ export const UI: React.FC = () => {
         </div>
 
         {/* Health Bar */}
-        <div className="w-48 bg-slate-800 h-6 rounded-full overflow-hidden border-2 border-slate-600">
+        <div className="w-48 bg-slate-800 h-6 rounded-full overflow-hidden border-2 border-slate-600 relative">
           <div
             className={`h-full transition-all duration-300 ${health > 50 ? 'bg-green-500' : health > 20 ? 'bg-yellow-500' : 'bg-red-600'}`}
             style={{ width: `${health}%` }}
           />
+          <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+            {Math.round(health)}%
+          </div>
         </div>
       </div>
 
