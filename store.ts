@@ -71,9 +71,11 @@ interface GameState {
   // Multiplayer
   roomId: string | null;
   playerId: string | null;
+  playerName: string;
   otherPlayers: Record<string, RemotePlayerState>;
   setRoomId: (id: string) => void;
   setPlayerId: (id: string) => void;
+  setPlayerName: (name: string) => void;
   updateRemotePlayer: (id: string, state: Partial<RemotePlayerState>) => void;
   removeRemotePlayer: (id: string) => void;
 
@@ -88,6 +90,7 @@ export interface Tombstone {
 
 export interface RemotePlayerState {
   id: string;
+  name?: string;
   position: [number, number, number];
   rotation: [number, number, number];
   health: number;
@@ -110,10 +113,12 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   roomId: null,
   playerId: null,
+  playerName: 'Player',
   otherPlayers: {},
 
   setRoomId: (id) => set({ roomId: id }),
   setPlayerId: (id) => set({ playerId: id }),
+  setPlayerName: (name) => set({ playerName: name }),
 
   updateRemotePlayer: (id, state) => set((prev) => ({
     otherPlayers: {

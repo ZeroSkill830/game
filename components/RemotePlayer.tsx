@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3, Group, Mesh } from 'three';
-import { Billboard } from '@react-three/drei';
+import { Billboard, Text as DreiText } from '@react-three/drei';
 import { RemotePlayerState } from '../store';
 import { FloatingText } from './FloatingText';
 import { v4 as uuidv4 } from 'uuid';
@@ -56,6 +56,19 @@ export function RemotePlayer({ state }: RemotePlayerProps) {
             {/* Health Bar - Above head (which is at 0 relative to group) */}
             <Billboard position={[0, 0.6, 0]}>
                 <group>
+                    {/* Name */}
+                    <DreiText
+                        position={[0, 0.25, 0]}
+                        fontSize={0.2}
+                        color="white"
+                        anchorX="center"
+                        anchorY="middle"
+                        outlineWidth={0.02}
+                        outlineColor="black"
+                    >
+                        {state.name || 'Unknown'}
+                    </DreiText>
+
                     {/* Background */}
                     <mesh position={[0, 0, -0.01]}>
                         <planeGeometry args={[1.2, 0.15]} />

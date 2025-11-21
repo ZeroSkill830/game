@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useGameStore, RemotePlayerState } from '../../store';
 
 const SERVER_URL = 'https://game-x7nt.onrender.com';
+// const SERVER_URL = 'http://localhost:3001';
 
 let socketInstance: Socket | null = null;
 
@@ -86,6 +87,12 @@ export function useMultiplayer() {
             const join = () => {
                 console.log('Joining room:', roomId);
                 socketInstance?.emit('join_room', roomId);
+                // Send initial name
+                const { playerName } = useGameStore.getState();
+                socketInstance?.emit('player_update', {
+                    roomId,
+                    name: playerName
+                });
             };
 
             if (socketInstance.connected) {
