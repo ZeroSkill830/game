@@ -247,24 +247,41 @@ const GameManager = () => {
       const raycaster = new Raycaster();
       raycaster.setFromCamera(new Vector2(0, 0), camera);
 
-      // Find all remote player meshes
-      const remotePlayers = scene.children.filter(child =>
-        child.userData.isRemotePlayer
-      );
+      // Intersect everything to check for walls/obstacles
+      const hits = raycaster.intersectObjects(scene.children, true);
 
-      const hits = raycaster.intersectObjects(remotePlayers, true);
-      if (hits.length > 0) {
-        // Hit the closest player
-        const hitObject = hits[0].object;
-        // Traverse up to find the group with the ID
-        let current: Object3D | null = hitObject;
+      for (const hit of hits) {
+        // Ignore self (if any parts of self are hit, though we are usually behind camera or ignored)
+        // Ignore helper objects like grid etc if any
+
+        // Traverse up to find what we hit
+        let current: Object3D | null = hit.object;
+        let hitPlayerId: string | null = null;
+        let isObstacle = false;
+
         while (current) {
           if (current.userData.playerId) {
-            console.log('Sending hit to:', current.userData.playerId, 'Damage:', stats.damage);
-            sendHit(current.userData.playerId, stats.damage);
-            break;
+            hitPlayerId = current.userData.playerId;
+            break; // Found a player
+          }
+          if (current.userData.isObstacle) {
+            isObstacle = true;
+            break; // Found an obstacle
           }
           current = current.parent;
+        }
+
+        if (isObstacle) {
+          // Hit a wall/obstacle before a player
+          // console.log('Hit obstacle');
+          break;
+        }
+
+        if (hitPlayerId) {
+          // Hit a player and no obstacle was before it
+          console.log('Sending hit to:', hitPlayerId, 'Damage:', stats.damage);
+          sendHit(hitPlayerId, stats.damage);
+          break; // Stop after hitting first player
         }
       }
 

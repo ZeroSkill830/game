@@ -45,7 +45,7 @@ interface DeskProps {
 // Semplici blocchi per creare l'ufficio
 const Desk: React.FC<DeskProps> = ({ position, rotation = [0, 0, 0] }) => {
   return (
-    <group position={position} rotation={rotation as any}>
+    <group position={position} rotation={rotation as any} userData={{ isObstacle: true }}>
       {/* Top */}
       <mesh position={[0, 0.7, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.6, 0.05, 0.8]} />
@@ -94,7 +94,7 @@ interface WallProps {
 }
 
 const Wall: React.FC<WallProps> = ({ position, args, color = "#94a3b8" }) => (
-  <mesh position={position} receiveShadow castShadow>
+  <mesh position={position} receiveShadow castShadow userData={{ isObstacle: true }}>
     <boxGeometry args={args} />
     <meshStandardMaterial color={color} />
   </mesh>
@@ -125,7 +125,7 @@ export const Level: React.FC = () => {
         }
         if (obj.type === 'plant') {
           return (
-            <group key={index} position={obj.position}>
+            <group key={index} position={obj.position} userData={{ isObstacle: true }}>
               <mesh position={[0, 0.4, 0]} castShadow>
                 <cylinderGeometry args={[0.3, 0.2, 0.8, 8]} />
                 <meshStandardMaterial color="#78350f" />

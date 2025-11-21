@@ -88,7 +88,6 @@ export const UI: React.FC = () => {
           <div className="text-4xl font-['Press_Start_2P'] text-white drop-shadow-md">
             {playerName}
           </div>
-          <div className="text-blue-300 text-sm font-bold mt-2">FREE ROAM</div>
         </div>
 
         {/* Leaderboard */}
