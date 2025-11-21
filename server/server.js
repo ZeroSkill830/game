@@ -21,9 +21,25 @@ const rooms = new Map();
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  socket.on('join_room', (roomId) => {
+  socket.on('join_room', (data) => {
+    console.log('join_room received data:', data);
+    let roomId;
+    let playerName = 'Unknown';
+
+    if (typeof data === 'string') {
+      roomId = data;
+    } else if (typeof data === 'object' && data !== null) {
+      roomId = data.roomId;
+      playerName = data.name || 'Unknown';
+    }
+
+    if (!roomId) {
+      console.error('Invalid roomId received:', roomId);
+      return;
+    }
+
     socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`);
+    console.log(`User ${playerName} (${socket.id}) joined room ${roomId}`);
 
     if (!rooms.has(roomId)) {
       rooms.set(roomId, new Map());
@@ -32,6 +48,7 @@ io.on('connection', (socket) => {
     // Initialize player state
     rooms.get(roomId).set(socket.id, {
       id: socket.id,
+      name: playerName,
       position: [0, 0, 0],
       rotation: [0, 0, 0],
       health: 100,
@@ -39,7 +56,7 @@ io.on('connection', (socket) => {
     });
 
     // Notify others in the room
-    socket.to(roomId).emit('player_joined', socket.id);
+    socket.to(roomId).emit('player_joined', { id: socket.id, name: playerName });
 
     // Send existing players to the new player
     const existingPlayers = Array.from(rooms.get(roomId).entries())
@@ -76,7 +93,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('player_hit', (data) => {
-    const { roomId, targetId, damage } = data;
+    const { roomId, targetId, damage, attackerId } = data;
+    console.log(`Player ${attackerId} hit ${targetId} for ${damage} damage`);
     if (rooms.has(roomId) && rooms.get(roomId).has(targetId)) {
       const targetPlayer = rooms.get(roomId).get(targetId);
       targetPlayer.health -= damage;
@@ -91,10 +109,30 @@ io.on('connection', (socket) => {
       if (targetPlayer.health <= 0) {
         targetPlayer.health = 0;
 
+        // Resolve names
+        const victimName = targetPlayer.name || 'Unknown';
+        let killerName = 'Unknown';
+        if (attackerId && rooms.get(roomId).has(attackerId)) {
+          killerName = rooms.get(roomId).get(attackerId).name || 'Unknown';
+        } else {
+          console.log(`Attacker ${attackerId} not found in room ${roomId}`);
+          console.log('Room players:', Array.from(rooms.get(roomId).keys()));
+        }
+
         // Notify death
+        console.log(`Player ${targetId} died. Killer: ${killerName}, Victim: ${victimName}`);
+        console.log('Emitting player_died with data:', {
+          id: targetId,
+          position: targetPlayer.position,
+          killerName,
+          victimName
+        });
+
         io.to(roomId).emit('player_died', {
           id: targetId,
-          position: targetPlayer.position
+          position: targetPlayer.position,
+          killerName,
+          victimName
         });
 
         // Remove player from room state so they don't get synced anymore
@@ -106,10 +144,12 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
     // Find which room the player was in
     for (const [roomId, players] of rooms.entries()) {
       if (players.has(socket.id)) {
+        const player = players.get(socket.id);
+        const playerName = player.name || 'Unknown';
+        console.log(`User ${playerName} (${socket.id}) disconnected`);
         players.delete(socket.id);
         io.to(roomId).emit('player_left', socket.id);
         if (players.size === 0) {

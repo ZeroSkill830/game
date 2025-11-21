@@ -81,6 +81,9 @@ interface GameState {
 
   tombstones: Tombstone[];
   addTombstone: (tombstone: Tombstone) => void;
+
+  killFeed: Array<{ id: string; message: string }>;
+  addKillFeedMessage: (message: string) => void;
 }
 
 export interface Tombstone {
@@ -144,6 +147,14 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   tombstones: [],
   addTombstone: (tombstone) => set((prev) => ({ tombstones: [...prev.tombstones, tombstone] })),
+
+  killFeed: [],
+  addKillFeedMessage: (message) => set((prev) => {
+    const newMessage = { id: Math.random().toString(36).substring(7), message };
+    // Keep only last 5 messages
+    const newFeed = [...prev.killFeed, newMessage].slice(-5);
+    return { killFeed: newFeed };
+  }),
 
   startGame: () => set({
     isPlaying: true,

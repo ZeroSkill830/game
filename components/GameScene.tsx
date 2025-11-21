@@ -41,10 +41,10 @@ import { Tombstone } from './Tombstone';
 // ... imports
 
 // Componente Controller del Giocatore
-const PlayerController = () => {
+const PlayerController = ({ sendUpdate }: { sendUpdate: (data: any) => void }) => {
   const { camera } = useThree();
   const { switchWeapon, nextWeapon, prevWeapon, currentWeapon, health } = useGameStore();
-  const { sendUpdate } = useMultiplayer();
+  // const { sendUpdate } = useMultiplayer(); // Removed to avoid double join
 
   // ... existing state ...
   const [moveForward, setMoveForward] = useState(false);
@@ -207,7 +207,7 @@ const PlayerController = () => {
 const GameManager = () => {
   const { camera, scene } = useThree();
   const { isPlaying, isGameOver, shoot, reload, ammo, currentWeapon, getWeaponStats, otherPlayers } = useGameStore();
-  const { sendAction, sendHit } = useMultiplayer();
+  const { sendAction, sendHit, sendUpdate } = useMultiplayer();
   const [isShootingVisual, setIsShootingVisual] = useState(false);
   const lastShotTime = useRef(0);
 
@@ -221,6 +221,7 @@ const GameManager = () => {
   }, [isPlaying]);
 
   const handleShoot = () => {
+    // console.log('handleShoot called');
     if (!isPlaying || isGameOver) return;
 
     const stats = getWeaponStats();
@@ -259,6 +260,7 @@ const GameManager = () => {
         let current: Object3D | null = hitObject;
         while (current) {
           if (current.userData.playerId) {
+            console.log('Sending hit to:', current.userData.playerId, 'Damage:', stats.damage);
             sendHit(current.userData.playerId, stats.damage);
             break;
           }
@@ -317,7 +319,7 @@ const GameManager = () => {
         <CameraAttachedWeapon isShooting={isShootingVisual} />
       </group>
 
-      <PlayerController />
+      <PlayerController sendUpdate={sendUpdate} />
 
       {/* Remote Players */}
       {Object.values(otherPlayers).map((player) => (

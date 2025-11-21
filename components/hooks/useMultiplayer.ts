@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useGameStore, RemotePlayerState } from '../../store';
 
-const SERVER_URL = 'https://game-x7nt.onrender.com';
-// const SERVER_URL = 'http://localhost:3001';
+// const SERVER_URL = 'https://game-x7nt.onrender.com';
+const SERVER_URL = 'http://localhost:3001';
 
 let socketInstance: Socket | null = null;
 
@@ -25,15 +25,26 @@ export function useMultiplayer() {
             const socket = socketInstance;
 
             socket.on('connect', () => {
-                console.log('Connected to server:', socket.id);
+                const { playerName } = useGameStore.getState();
+                console.log(`Connected to server: ${playerName} (${socket.id})`);
                 if (socket.id) {
                     setPlayerId(socket.id);
                 }
             });
 
-            socket.on('player_joined', (id: string) => {
-                console.log('Player joined:', id);
-                updateRemotePlayer(id, {});
+            socket.on('player_joined', (data: { id: string, name: string } | string) => {
+                let id: string;
+                let name: string = 'Unknown';
+
+                if (typeof data === 'string') {
+                    id = data;
+                } else {
+                    id = data.id;
+                    name = data.name || 'Unknown';
+                }
+
+                console.log(`Player joined: ${name} (${id})`);
+                updateRemotePlayer(id, { name });
             });
 
             socket.on('current_players', (players: RemotePlayerState[]) => {
@@ -55,40 +66,55 @@ export function useMultiplayer() {
                 }
             });
 
-            socket.on('player_died', (data: { id: string, position: [number, number, number] }) => {
-                if (data.id === socket.id) {
+            socket.on('player_died', (data: { id: string, position: [number, number, number], killerName?: string, victimName?: string }) => {
+                console.log('Player died event received:', data);
+                const { id, position, killerName, victimName } = data;
+
+                if (killerName && victimName) {
+                    useGameStore.getState().addKillFeedMessage(`${killerName} ha ucciso ${victimName}`);
+                }
+
+                if (id === socket.id) {
                     // Local player died
                     useGameStore.getState().endGame();
                 } else {
                     // Remote player died
-                    removeRemotePlayer(data.id);
+                    removeRemotePlayer(id);
                     useGameStore.getState().addTombstone({
-                        id: data.id,
-                        position: data.position
+                        id: `${id}-${Date.now()}`,
+                        position
                     });
                 }
             });
 
             socket.on('player_left', (id: string) => {
-                console.log('Player left:', id);
+                const player = useGameStore.getState().otherPlayers[id];
+                const name = player?.name || 'Unknown';
+                console.log(`Player left: ${name} (${id})`);
                 removeRemotePlayer(id);
             });
         }
 
-        // We don't disconnect on unmount anymore to allow multiple components to use the hook
-        // Cleanup should happen when the app closes or explicitly if needed.
-        // For now, we rely on the singleton.
+        return () => {
+            // Do not disconnect on unmount to keep connection alive across re-renders
+            // if (socketInstance) {
+            //     console.log('Disconnecting socket...');
+            //     socketInstance.disconnect();
+            //     socketInstance = null;
+            // }
+        };
 
     }, []);
 
     // Join room when roomId is set or game restarts
     useEffect(() => {
-        if (roomId && socketInstance) {
+        if (roomId && socketInstance && isPlaying) {
             const join = () => {
                 console.log('Joining room:', roomId);
-                socketInstance?.emit('join_room', roomId);
                 // Send initial name
                 const { playerName } = useGameStore.getState();
+                socketInstance?.emit('join_room', { roomId, name: playerName });
+
                 socketInstance?.emit('player_update', {
                     roomId,
                     name: playerName
@@ -128,7 +154,8 @@ export function useMultiplayer() {
             socketInstance.emit('player_hit', {
                 roomId,
                 targetId,
-                damage
+                damage,
+                attackerId: socketInstance.id
             });
         }
     };
