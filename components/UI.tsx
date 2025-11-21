@@ -4,7 +4,7 @@ import { useGameStore, WEAPONS } from '../store';
 import { initAudio } from '../audio';
 
 export const UI: React.FC = () => {
-  const { score, health, ammo, isPlaying, isGameOver, startGame, reset, currentWeapon, getWeaponStats, killFeed } = useGameStore();
+  const { score, playerName, health, ammo, isPlaying, isGameOver, startGame, reset, currentWeapon, getWeaponStats, killFeed } = useGameStore();
 
   const weaponStats = getWeaponStats();
   const currentAmmoCount = ammo[currentWeapon];
@@ -86,7 +86,7 @@ export const UI: React.FC = () => {
       <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start">
         <div className="flex flex-col">
           <div className="text-4xl font-['Press_Start_2P'] text-white drop-shadow-md">
-            {score.toString().padStart(6, '0')}
+            {playerName}
           </div>
           <div className="text-blue-300 text-sm font-bold mt-2">FREE ROAM</div>
         </div>
