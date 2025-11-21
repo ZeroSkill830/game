@@ -51,6 +51,8 @@ export function RemotePlayer({ state }: RemotePlayerProps) {
         setTexts(prev => prev.filter(t => t.id !== id));
     };
 
+    if (state.health <= 0) return null;
+
     return (
         <group ref={groupRef} userData={{ isRemotePlayer: true, playerId: state.id }}>
             {/* Health Bar - Above head (which is at 0 relative to group) */}

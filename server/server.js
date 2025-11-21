@@ -46,13 +46,20 @@ io.on('connection', (socket) => {
     }
 
     // Initialize player state
+    // Check if player already exists (respawn) to persist kills
+    let existingKills = 0;
+    if (rooms.get(roomId).has(socket.id)) {
+      existingKills = rooms.get(roomId).get(socket.id).kills || 0;
+    }
+
     rooms.get(roomId).set(socket.id, {
       id: socket.id,
       name: playerName,
       position: [0, 0, 0],
       rotation: [0, 0, 0],
       health: 100,
-      weapon: 'pistol'
+      weapon: 'pistol',
+      kills: existingKills
     });
 
     // Notify others in the room
@@ -64,6 +71,12 @@ io.on('connection', (socket) => {
       .map(([id, state]) => state);
 
     socket.emit('current_players', existingPlayers);
+
+    // Send welcome message with own state (to sync kills on respawn)
+    socket.emit('welcome', {
+      id: socket.id,
+      kills: existingKills
+    });
   });
 
   socket.on('player_update', (data) => {
@@ -113,7 +126,15 @@ io.on('connection', (socket) => {
         const victimName = targetPlayer.name || 'Unknown';
         let killerName = 'Unknown';
         if (attackerId && rooms.get(roomId).has(attackerId)) {
-          killerName = rooms.get(roomId).get(attackerId).name || 'Unknown';
+          const killer = rooms.get(roomId).get(attackerId);
+          killerName = killer.name || 'Unknown';
+          killer.kills = (killer.kills || 0) + 1;
+
+          // Notify everyone about killer's new kill count
+          io.to(roomId).emit('player_update', {
+            id: attackerId,
+            kills: killer.kills
+          });
         } else {
           console.log(`Attacker ${attackerId} not found in room ${roomId}`);
           console.log('Room players:', Array.from(rooms.get(roomId).keys()));
@@ -138,7 +159,8 @@ io.on('connection', (socket) => {
         // Remove player from room state so they don't get synced anymore
         // But keep socket connection for now so they can receive game over state if needed?
         // Actually, let's just remove them from the map.
-        rooms.get(roomId).delete(targetId);
+        // FIX: Do NOT remove player from room state so they stay on leaderboard
+        // rooms.get(roomId).delete(targetId);
       }
     }
   });

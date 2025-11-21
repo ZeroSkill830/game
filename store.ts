@@ -45,6 +45,7 @@ export const WEAPONS: Record<WeaponType, WeaponStats> = {
 interface GameState {
   score: number;
   health: number;
+  kills: number;
   isPlaying: boolean;
   isGameOver: boolean;
 
@@ -98,11 +99,13 @@ export interface RemotePlayerState {
   rotation: [number, number, number];
   health: number;
   weapon: WeaponType;
+  kills: number;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
   score: 0,
   health: 100,
+  kills: 0,
   isPlaying: false,
   isGameOver: false,
   wave: 1,
@@ -132,7 +135,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           position: [0, 0, 0],
           rotation: [0, 0, 0],
           health: 100,
-          weapon: 'pistol'
+          weapon: 'pistol',
+          kills: 0
         }),
         ...state
       }

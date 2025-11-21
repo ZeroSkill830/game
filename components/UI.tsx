@@ -4,7 +4,7 @@ import { useGameStore, WEAPONS } from '../store';
 import { initAudio } from '../audio';
 
 export const UI: React.FC = () => {
-  const { score, playerName, health, ammo, isPlaying, isGameOver, startGame, reset, currentWeapon, getWeaponStats, killFeed } = useGameStore();
+  const { score, playerName, health, ammo, isPlaying, isGameOver, startGame, reset, currentWeapon, getWeaponStats, killFeed, kills } = useGameStore();
 
   const weaponStats = getWeaponStats();
   const currentAmmoCount = ammo[currentWeapon];
@@ -89,6 +89,23 @@ export const UI: React.FC = () => {
             {playerName}
           </div>
           <div className="text-blue-300 text-sm font-bold mt-2">FREE ROAM</div>
+        </div>
+
+        {/* Leaderboard */}
+        <div className="absolute top-20 left-6 flex flex-col gap-1 pointer-events-none">
+          <div className="bg-black/50 text-white px-3 py-1 rounded text-sm font-bold mb-1">
+            LEADERBOARD
+          </div>
+          {Object.values(useGameStore.getState().otherPlayers)
+            .concat([{ id: 'me', name: playerName, kills: kills } as any])
+            .map(p => ({ name: p.name || 'Unknown', kills: p.kills || 0, id: p.id }))
+            .sort((a, b) => b.kills - a.kills)
+            .map((p) => (
+              <div key={p.id} className="bg-black/50 text-white px-3 py-1 rounded text-sm flex justify-between min-w-[150px]">
+                <span>{p.name}</span>
+                <span className="text-yellow-400">{p.kills}</span>
+              </div>
+            ))}
         </div>
 
         {/* Kill Feed */}

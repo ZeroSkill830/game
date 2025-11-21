@@ -32,6 +32,11 @@ export function useMultiplayer() {
                 }
             });
 
+            socket.on('welcome', (data: { id: string, kills: number }) => {
+                console.log('Welcome received:', data);
+                useGameStore.setState({ kills: data.kills });
+            });
+
             socket.on('player_joined', (data: { id: string, name: string } | string) => {
                 let id: string;
                 let name: string = 'Unknown';
@@ -59,6 +64,7 @@ export function useMultiplayer() {
                     useGameStore.setState((state) => {
                         const updates: any = {};
                         if (data.health !== undefined) updates.health = data.health;
+                        if (data.kills !== undefined) updates.kills = data.kills;
                         return updates;
                     });
                 } else {
@@ -79,7 +85,7 @@ export function useMultiplayer() {
                     useGameStore.getState().endGame();
                 } else {
                     // Remote player died
-                    removeRemotePlayer(id);
+                    // removeRemotePlayer(id); // FIX: Keep player in store for leaderboard
                     useGameStore.getState().addTombstone({
                         id: `${id}-${Date.now()}`,
                         position
