@@ -135,7 +135,6 @@ export function useMultiplayer() {
         }
     }, [roomId, isPlaying]);
 
-    // Helper to send updates
     const sendUpdate = (data: Partial<RemotePlayerState>) => {
         if (socketInstance && roomId) {
             socketInstance.emit('player_update', {
@@ -145,12 +144,27 @@ export function useMultiplayer() {
         }
     };
 
-    const sendAction = (type: string, ...args: any[]) => {
+    useEffect(() => {
+        if (!socketInstance) return;
+
+        const handlePlayerAction = (data: { id: string, type: string, [key: string]: any }) => {
+            // Dispatch custom event for GameScene to pick up
+            window.dispatchEvent(new CustomEvent('remote_player_action', { detail: data }));
+        };
+
+        socketInstance.on('player_action', handlePlayerAction);
+
+        return () => {
+            socketInstance?.off('player_action', handlePlayerAction);
+        };
+    }, []);
+
+    const sendAction = (type: string, payload?: any) => {
         if (socketInstance && roomId) {
             socketInstance.emit('player_action', {
                 roomId,
                 type,
-                ...args
+                ...(payload || {})
             });
         }
     };

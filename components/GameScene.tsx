@@ -2,7 +2,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PointerLockControls, Stars } from '@react-three/drei';
-import { Vector3, Group, Mesh, Object3D, Raycaster, Vector2 } from 'three';
+import { Vector3, Group, Mesh, Object3D, Raycaster, Vector2, Euler, Quaternion } from 'three';
 import { Level, BOUNDS, COLLIDERS, getRandomSpawnPoint } from './Level';
 import { Weapon } from './Weapon';
 import { useGameStore, WEAPONS } from '../store';
@@ -219,6 +219,57 @@ const GameManager = () => {
       startAmbience();
     }
   }, [isPlaying]);
+
+  useEffect(() => {
+    const handleRemoteAction = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { id, type, weapon } = customEvent.detail;
+
+      if (type === 'shoot') {
+        // Find the remote player
+        const playerState = useGameStore.getState().otherPlayers[id];
+        if (playerState && projectilesRef.current) {
+          // Calculate spawn position (eye level)
+          const origin = new Vector3(...playerState.position);
+          origin.y += -0.2; // Adjusted to match gun height relative to eye level
+
+          // Get weapon stats
+          const weaponType = (weapon as any) || 'pistol';
+          const stats = WEAPONS[weaponType] || WEAPONS['pistol'];
+
+          // Play sound
+          playGunshot(weaponType);
+
+          for (let i = 0; i < stats.bulletCount; i++) {
+            // Calculate direction from rotation
+            // Rotation is [x, y, z] Euler angles
+            const rotation = new Euler(...playerState.rotation);
+            const quaternion = new Quaternion().setFromEuler(rotation);
+
+            // Base direction
+            const baseDir = new Vector3(0, 0, -1);
+            baseDir.applyQuaternion(quaternion);
+
+            // Apply spread
+            const spreadX = (Math.random() - 0.5) * stats.spread;
+            const spreadY = (Math.random() - 0.5) * stats.spread;
+            const spreadZ = (Math.random() - 0.5) * stats.spread;
+
+            const dir = baseDir.clone().add(new Vector3(spreadX, spreadY, spreadZ)).normalize();
+
+            // Spawn projectile
+            // We don't need damage for visual projectiles, but the function requires it
+            projectilesRef.current.fire(origin, dir, 0);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('remote_player_action', handleRemoteAction);
+    return () => {
+      window.removeEventListener('remote_player_action', handleRemoteAction);
+    };
+  }, []);
 
   const handleShoot = () => {
     // console.log('handleShoot called');
